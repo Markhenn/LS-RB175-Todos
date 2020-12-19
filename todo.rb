@@ -6,6 +6,9 @@ require "tilt/erubis"
 configure do
   enable :sessions
   set :session_secret, 'secret'
+
+  # This escapes all text on the page
+  set :erb, :escape_html => true
 end
 
 before do
@@ -99,10 +102,19 @@ post "/lists" do
   end
 end
 
+# Validate that a list  exists
+def load_list(index)
+  list = session[:lists][index] if index && session[:lists][index]
+  return list if list
+
+  session[:error] = "The specified list was not found"
+  redirect "/lists"
+end
+
 # Show a single to list
 get "/lists/:id" do
   @list_id = params[:id].to_i
-  @list = session[:lists][@list_id]
+  @list = load_list(@list_id)
 
   erb :list
 end
@@ -110,7 +122,7 @@ end
 # Edit a list
 get "/lists/:id/edit" do
   id = params[:id].to_i
-  @list = session[:lists][id]
+  @list = load_list(@list_id)
   erb :edit_list
 end
 
@@ -118,7 +130,7 @@ end
 post "/lists/:id" do
   list_name = params[:list_name].strip
   @list_id = params[:id].to_i
-  @list = session[:lists][@list_id]
+  @list = load_list(@list_id)
 
   error = error_for_list_name(list_name)
   if error
@@ -143,7 +155,7 @@ end
 post "/lists/:list_id/todos" do
   todo_name = params[:todo].strip
   @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id]
+  @list = load_list(@list_id)
 
   error = error_for_todo(todo_name)
   if error
@@ -161,7 +173,7 @@ post "/lists/:list_id/todos/:id/delete" do
   todo_id = params[:id].to_i
 
   list_id = params[:list_id].to_i
-  @list = session[:lists][list_id]
+  @list = load_list(@list_id)
   @list[:todos].delete_at(todo_id)
 
   session[:success] = "The todo has been deleted"
@@ -171,7 +183,7 @@ end
 # Update status of a todo
 post "/lists/:list_id/todos/:id" do
   list_id = params[:list_id].to_i
-  @list = session[:lists][list_id]
+  @list = load_list(@list_id)
 
   todo_id = params[:id].to_i
   is_completed = params[:completed] == "true"
@@ -184,7 +196,7 @@ end
 # Complete all todos
 post "/lists/:list_id/complete_all" do
   list_id = params[:list_id].to_i
-  @list = session[:lists][list_id]
+  @list = load_list(@list_id)
 
   @list[:todos].each do |todo|
     todo[:completed] = true
