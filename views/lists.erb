@@ -1,7 +1,7 @@
 <ul id="lists">
-  <% sort_list(@lists) do |list, index| %>
+  <% sort_list(@lists) do |list| %>
     <li class="<%= completed?(list) %>">
-      <a href="/lists/<%= index %>">
+      <a href="/lists/<%= list[:id] %>">
         <h2><%= list[:name] %></h2>
         <p><%= remaining_todos(list) %> / <%= count_todos(list) %></p>
       </a>
